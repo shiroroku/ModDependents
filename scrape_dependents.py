@@ -20,26 +20,25 @@ options.add_argument("-headless")
 options.set_preference("javascript.enabled", False)
 driver = webdriver.Firefox(options=options)
 driver.get(curseforge_url)
-assert "Related Dependents" in driver.title
+if "Related Dependents" not in driver.title:
+	raise RuntimeError("Curseforge response returned invalid dependents page")
 
 # Get total pages of deps
-total_pages = int(driver.find_element(By.XPATH, "//div[@class='pagination pagination-top flex items-center']").find_elements(By.XPATH, ".//span")[-1].text)
+total_pages = int(driver.find_element(By.CSS_SELECTOR, ".pagination.pagination-top").find_elements(By.CSS_SELECTOR, "span")[-1].text)
 
 print(f"Page found. Total pages of dependents: {total_pages}\n")
 
 # Load each page and record projects as a json object
 json_output = []
-for i in range(total_pages):
-	print(f"Scraping page {i + 1} of {total_pages}:\n")
-	driver.get(f"{curseforge_url}?page={i + 1}")
-	assert "Related Dependents" in driver.title
+for i in range(1, total_pages + 1):
+	print(f"Scraping page {i} of {total_pages}:\n")
 
-	projects = driver.find_element(By.XPATH, "//ul[@class='listing listing-project project-listing']").find_elements(By.XPATH, ".//div[@class='flex flex-col']")
+	projects = driver.find_element(By.CSS_SELECTOR, ".listing.listing-project.project-listing").find_elements(By.CSS_SELECTOR, "div.flex.flex-col")
 
 	for x in projects:
-		title = x.find_element(By.XPATH, ".//h3").text
-		link = x.find_element(By.XPATH, ".//a").get_attribute("href")
-		downloads = x.find_element(By.XPATH, ".//span").text.split(' ')[0]
+		title = x.find_element(By.CSS_SELECTOR, "h3").text
+		link = x.find_element(By.CSS_SELECTOR, "a").get_attribute("href")
+		downloads = x.find_element(By.CSS_SELECTOR, "span").text.split(' ')[0]
 
 		print(f"[{title}][{downloads}][{link}]")
 		project = {
@@ -50,25 +49,30 @@ for i in range(total_pages):
 		json_output.append(project)
 	print()
 
+	if i != total_pages:
+		driver.get(f"{curseforge_url}?page={i + 1}")
+		assert "Related Dependents" in driver.title
+
 # Format downloads to int
 print("Formatting...")
 for project in json_output:
-	downloads = str(project["downloads"])
+	downloads = project["downloads"]
 	if "K" in downloads:
-		downloads = float(downloads.replace('K', '')) * 1000
+		project["downloads"] = int(float(downloads[:-1]) * 1000)
 	elif "M" in downloads:
-		downloads = float(downloads.replace('M', '')) * 1000000
+		project["downloads"] = int(float(downloads[:-1]) * 1000000)
 	elif "-" in downloads:
-		downloads = 0
-	project["downloads"] = int(downloads)
+		project["downloads"] = 0
+	else:
+		project["downloads"] = int(downloads)
 
 # Output json to file
 print("Writing to disk...")
 file = f"./{mod_slug}.json"
 if args.o is not None:
 	file = args.o
-with open(f"./{mod_slug}.json", "w") as f:
-	f.write(json.dumps(json_output, indent=4))
+with open(file, "w") as f:
+	json.dump(json_output, f, indent=4)
 
 driver.close()
 print("Finished.")
