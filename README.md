@@ -15,16 +15,10 @@ This script uses [Selenium's](https://pypi.org/project/selenium/) FireFox web dr
 Argparse is used to specify arguments to the script.  
 **Make sure you have FireFox installed for Selenium to use.**
 
-`scrape_dependents.py`:
+`-p` is required and you must have at least `-j` or `-m` or both.  
 
-| Argument | Meaning                     | Example       |
-|----------|-----------------------------|---------------|
-| -p       | Project Slug (found in url) | the-aurorian  |
-| -o       | (Optional) Output Json file | ./output.json |
-
-`md_converter.py`:
-
-| Argument | Meaning                               |
-|----------|---------------------------------------|
-| -f       | Json file from `scrape_dependents.py` |
-| -o       | (Optional) Output Markdown file       | 
+| Argument | Meaning                         |       Example |
+|:--------:|:--------------------------------|---------------|
+|    -p    | Project Slug (found in url)     |  the-aurorian |
+|    -j    | (Optional) Output Json file     | ./output.json |
+|    -m    | (Optional) Output Markdown file |   ./output.md |
